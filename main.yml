@@ -1,0 +1,50 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: Update repository index
+    ansible.builtin.package:
+      update_cache: true
+
+  - name: Install nice to haves
+    ansible.builtin.package:
+      name: 
+      - neovim
+      - tmux
+      - htop
+      - libsensors-dev
+      state: latest
+
+  - name: Install build essentials
+    ansible.builtin.package:
+      name: 
+      - build-essential
+      - gfortran
+      - automake
+      state: latest
+
+  - name: Create required temporary directories.
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user | default(ansible_env.USER, true) | default(ansible_user_id, true) }}"
+        group: "{{ ansible_user | default(ansible_env.USER, true) | default(ansible_user_id, true) }}"
+        mode: 0755
+      loop:
+        - "{{ hpl_root }}/tmp"
+        - "{{ hpl_root }}/tmp/atlas-build"
+      become: true
+
+  - name: Install MPI
+    ansible.builtin.package:
+      name:
+        - openmpi-bin
+        - mpi-default-dev
+      state: latest
+
+  - name: install OpenBlas package
+    ansible.builtin.package:
+      name: libopenblas-base
+      state: latest
