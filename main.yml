@@ -2,6 +2,8 @@
 
 - hosts: all
   become: true
+  vars_files: ['config.yml']
+  tags: ['setup']
   tasks:
 
   - name: Update repository index
@@ -25,26 +27,71 @@
       - automake
       state: latest
 
-  - name: Create required temporary directories.
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        owner: "{{ ansible_user | default(ansible_env.USER, true) | default(ansible_user_id, true) }}"
-        group: "{{ ansible_user | default(ansible_env.USER, true) | default(ansible_user_id, true) }}"
-        mode: 0755
-      loop:
-        - "{{ hpl_root }}/tmp"
-        - "{{ hpl_root }}/tmp/atlas-build"
-      become: true
+  - name: Download MPI (Message Passing Interface).
+    ansible.builtin.unarchive:
+      src: https://www.mpich.org/static/downloads/3.4.2/mpich-3.4.2.tar.gz
+      dest: "{{ program_dir }}"
+      remote_src: true
+      creates: "{{ program_dir }}/mpich-3.4.2/README"
 
-  - name: Install MPI
-    ansible.builtin.package:
-      name:
-        - openmpi-bin
-        - mpi-default-dev
-      state: latest
+  - name: Build MPI (takes a while).
+    ansible.builtin.command: "{{ item }}"
+    args:
+      chdir: "{{ program_dir }}/mpich-3.4.2"
+      creates: "{{ program_dir }}/COMPILE_MPI_COMPLETE"
+    loop:
+      - ./configure --with-device=ch3:sock FFLAGS=-fallow-argument-mismatch
+      - "make -j{{ ansible_processor_nproc }}"
 
-  - name: install OpenBlas package
-    ansible.builtin.package:
-      name: libopenblas-base
-      state: latest
+  - name: Install MPI.
+    ansible.builtin.command: make install
+    args:
+      chdir: "{{ program_dir }}/mpich-3.4.2"
+      creates: "{{ program_dir }}/COMPILE_MPI_COMPLETE"
+    become: true
+
+  - name: Create benchmark directory
+    ansible.builtin.file:
+      path: "{{ program_dir }}"
+      state: directory
+      owner: "{{ ansible_user | default(ansible_env.USER, true) | default(ansible_user_id, true) }}"
+      group: "{{ ansible_user | default(ansible_env.USER, true) | default(ansible_user_id, true) }}"
+      mode: 0755
+    become: true
+
+  - name: Download Atlas
+    ansible.builtin.unarchive:
+      src: "https://sourceforge.net/projects/math-atlas/files/Stable/3.10.3/atlas3.10.3.tar.bz2"
+      dest: "{{ program_dir }}"
+      remote_src: true
+      creates: "{{ program_dir }}/ATLAS/README"
+
+  - name: Install ATLAS (takes a LONG time).
+    ansible.builtin.command: "{{ item }}"
+    args:
+      chdir: "{{ program_dir }}/atlas-build"
+      creates: "{{ program_dir }}/COMPILE_ATLAS_COMPLETE"
+    loop:
+      - ../ATLAS/configure
+      - make
+
+  - name: Download hpl
+    ansible.builtin.unarchive:
+      src: "https://netlib.org/benchmark/hpl/{{ hpl_name }}.tar.gz"
+      dest: "{{ program_dir }}"
+      remote_src: true
+      creates: "{{ program_dir }}/{{ hpl_name }}/README"
+
+  - name: Copy our makefile to hpl
+    ansible.builtin.template:
+      src: templates/benchmark-Make.rpi.j2
+      dest: "{{ program_dir }}/{{ hpl_name }}/Make.rpi"
+      mode: 0644
+
+  - name: Build hpl
+    ansible.builtin.command: "make arch=rpi"
+    args:
+      chdir: "{{ program_dir }}/{{ hpl_name }}"
+      creates: "{{ program_dir }}/{{ hpl_name }}/bin/Atlas/xhpl"
+
+

@@ -1,0 +1,18 @@
+---
+
+- name: Test if we can set CPU scaling parameters.
+  ansible.builtin.command: >-
+    ls /sys/devices/system/cpu/cpu0/cpufreq
+  failed_when: false
+  changed_when: false
+  register: cpufreq_exists
+
+- name: Disable effiency cores.
+  ansible.builtin.shell: >-
+    echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+  when: cpufreq_exists.rc == 0
+
+- name: Ensure CPU scaling is set to 'performance'.
+  ansible.builtin.shell: >-
+    echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+  when: cpufreq_exists.rc == 0
