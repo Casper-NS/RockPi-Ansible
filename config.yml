@@ -23,7 +23,7 @@ ram_in_gb: "{{ ( ansible_memtotal_mb / 1024 * 0.75 ) | int | abs }}"
 
 nodecount: "{{ ansible_play_hosts | length | int }}"
 
-hpl_config:
+hpl_dat_opts:
   Ns: "{{ (((((ram_in_gb | int) * 1024 * 1024 * 1024 * (nodecount | int)) / 8) | root) * 0.90) | int }}"
   NBs: 196
   Ps: 1
