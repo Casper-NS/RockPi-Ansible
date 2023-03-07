@@ -78,6 +78,6 @@
   - name: Create HPL.dat file.
     ansible.builtin.template:
       src: templates/HPL.dat.j2
-      dest: "{{ hpl_root }}/tmp/{{hpl_name}}/bin/OpenBLAS/HPL.dat"
+      dest: "{{ program_dir }}/{{hpl_name}}/bin/OpenBLAS/HPL.dat"
       mode: 0644
 
