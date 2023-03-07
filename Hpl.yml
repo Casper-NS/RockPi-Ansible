@@ -9,7 +9,10 @@
 
 - name: Disable effiency cores.
   ansible.builtin.shell: >-
-    echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+    echo 0 > /sys/devices/system/cpu/cpu0/online
+    echo 0 > /sys/devices/system/cpu/cpu1/online
+    echo 0 > /sys/devices/system/cpu/cpu2/online
+    echo 0 > /sys/devices/system/cpu/cpu3/online
   when: cpufreq_exists.rc == 0
 
 - name: Ensure CPU scaling is set to 'performance'.

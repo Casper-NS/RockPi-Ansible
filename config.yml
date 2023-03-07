@@ -1,12 +1,21 @@
 ---
 program_dir: "/opt/bench"
 
+atlas_version: "3.10.3"
+atlas_name: atlas{{ atlas_version }}
+
 hpl_version: "2.3"
 hpl_name: "hpl-{{ hpl_version }}"
+
+openblas_version: "0.3.21"
+openblas_name: "OpenBLAS-{{ openblas_version }}"
 
 hpcg_version: "3-1-0"
 hpcg_archive_name: "HPCG-release-{{ hpcg_version }}"
 hpcg_name: "hpcg-{{ hpcg_archive_name }}"
+
+mpich_version: "3.4.2"
+mpich_name: mpich-{{ mpich_version }}
 
 compile_flags: "-Ofast -march=native -fno-stack-protector -z execstack -no-pie -fomit-frame-pointer -funroll-loops -ffast-math -ftree-vectorize"
 
@@ -15,7 +24,8 @@ ram_in_gb: "{{ ( ansible_memtotal_mb / 1024 * 0.75 ) | int | abs }}"
 nodecount: "{{ ansible_play_hosts | length | int }}"
 
 hpl_config:
-  N: "{{ (((((ram_in_gb | int) * 1024 * 1024 * 1024 * (nodecount | int)) / 8) | root) * 0.90) | int }}"
-  NB: 256
-  P: 1
+  Ns: "{{ (((((ram_in_gb | int) * 1024 * 1024 * 1024 * (nodecount | int)) / 8) | root) * 0.90) | int }}"
+  NBs: 196
+  Ps: 1
   Qs: 4
+  SwapThres: 128
